@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Greeting MCP Server",
+            "program": "${workspaceFolder}/greeting-mcp/dist/main.js",
+            "outFiles": ["${workspaceFolder}/greeting-mcp/dist/**/*.js"],
+            "preLaunchTask": "tsc: build - greeting-mcp/tsconfig.json",
+            "sourceMaps": true,
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        }
+    ]
+}
