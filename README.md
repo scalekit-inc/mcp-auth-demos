@@ -21,9 +21,9 @@ A secure Model Context Protocol (MCP) server for greeting users. This project de
 - Create/Update `.env` file in the root of the `greeting-mcp` directory.
 - Add the following variables:
 	```env
-	ENVIRONMENT_URL=your_environment_url
-	CLIENT_ID=your_client_id
-	CLIENT_SECRET=your_client_secret
+	SK_ENV_URL=your_environment_url
+	SK_CLIENT_ID=your_client_id
+	SK_CLIENT_SECRET=your_client_secret
 	# Add MCP_SERVER_ID and PROTECTED_RESOURCE_METADATA in later steps
 	```
 
@@ -36,7 +36,7 @@ A secure Model Context Protocol (MCP) server for greeting users. This project de
 ### 5. Register the MCP Server
 - Go to **MCP Servers** in [app.scalekit.com](https://app.scalekit.com).
 - Register a new MCP server:
-	- **Server Identifier:** `http://localhost:3002`
+	- **Server Identifier:** `http://localhost:3002/` [make sure you have put a trailing slash at the end]
 	- **Enable Dynamic Client Registration:** (check the box)
 - After creation, copy:
 	- **MCP Server ID** (looks like `res_XXX`)
