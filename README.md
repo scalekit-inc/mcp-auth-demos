@@ -1,128 +1,149 @@
-# Greeting MCP Server
+# Python MCP Server with ScaleKit Authentication
 
-A secure Model Context Protocol (MCP) server for greeting users. This project demonstrates secure, permissioned mcp with dynamic client registration using Scalekit's platform.
+A production-ready Python-based Model Context Protocol (MCP) server with ScaleKit OAuth 2.1 authentication integration.
 
-## Prerequisites
-- Node.js (v18+ recommended)
-- npm
-- Access to [app.scalekit.com](https://app.scalekit.com) with workspace
-- (Optional) VS Code Insider with MCP extension, or any compatible MCP client
+## Features
 
-## Getting Started
-
-### 1. Enable Full Stack Authentication
-- Go to [app.scalekit.com](https://app.scalekit.com) and log in to your workspace.
-- Enable **Full Stack Authentication** for your workspace.
-
-### 2. Obtain Credentials
-- Copy your **Environment URL**, **Client ID**, and **Client Secret** from the Settings -> API Credentials section on Scalekit dashboard.
-
-### 3. Configure Environment Variables
-- Create/Update `.env` file in the root of the `greeting-mcp` directory.
-- Add the following variables:
-	```env
-	SK_ENV_URL=your_environment_url
-	SK_CLIENT_ID=your_client_id
-	SK_CLIENT_SECRET=your_client_secret
-	# Add MCP_SERVER_ID and PROTECTED_RESOURCE_METADATA in later steps
-	```
-
-### 4. Set Up Permissions
-- In [app.scalekit.com](https://app.scalekit.com), navigate to **Authorization** > **Permissions**.
-- Create a permission:
-	- **Name:** `usr:read`
-	- **Description:** `Reading basic information of the users`
-
-### 5. Register the MCP Server
-- Go to **MCP Servers** in [app.scalekit.com](https://app.scalekit.com).
-- Register a new MCP server:
-	- **Server Identifier:** `http://localhost:3002/` [make sure you have put a trailing slash at the end]
-	- **Enable Dynamic Client Registration:** (check the box)
-- After creation, copy:
-	- **MCP Server ID** (looks like `res_XXX`)
-	- **Protected Resource Metadata** (as JSON)
-- Add these to your `.env` file. **Minify** the JSON for `PROTECTED_RESOURCE_METADATA` (remove all whitespace):
-	```env
-	MCP_SERVER_ID=res_XXX
-	PROTECTED_RESOURCE_METADATA='{...minified_json...}'
-	```
-
-### 6. Install Dependencies
-```sh
-cd greeting-mcp
-npm install
-npx tsc
-```
-
-### 7. Run the Server
-```sh
-npm run start
-```
-
-The server will start on `http://localhost:3002`.
-
-### 8. Connect with an MCP Client
-- Use an MCP client (e.g., VS Code Insider with MCP extension).
-- Open your `mcp.json` and paste:
-	```json
-	{
-		"servers": {
-			"greeting": {
-				"url": "http://localhost:3002/",
-				"type": "http"
-			}
-		},
-		"inputs": []
-	}
-	```
-- Click **Start**.
-
-### 9. Authorize and Test
-- Allow all prompts in the MCP client.
-- Log in with your email address and authorize when prompted.
-- In your MCP client, enter a prompt like:
-	> Can you please greet John?
-- You should see the greeting tool being invoked (allow if prompted).
-
-#### Note - For Non-OAuth MCP Clients
-If your MCP client does not support OAuth, use the following in your `mcp.json`. This makes use of mcp-remote to handle authentication:
-```json
-{
-	"mcpServers": {
-		"greeting": {
-			"command": "npx",
-			"args": [
-				"-y", "mcp-remote", "http://localhost:3002/"
-			]
-		}
-	}
-}
-```
-
----
+- **ScaleKit OAuth 2.1**: Secure authentication with scope-based authorization
+- **Modular Architecture**: Clean separation of concerns (config, auth, tools, transport)
+- **FastAPI Backend**: Modern async Python web framework
+- **Comprehensive Logging**: Structured logging for debugging and monitoring
+- **CORS Support**: Cross-origin resource sharing for web client compatibility
 
 ## Project Structure
+
 ```
-greeting-mcp/
-├── package.json
-├── tsconfig.json
-├── src/
-│   ├── main.ts
-│   ├── config/
-│   │   └── config.ts
-│   ├── lib/
-│   │   ├── auth.ts
-│   │   ├── logger.ts
-│   │   ├── middleware.ts
-│   │   └── transport.ts
-│   └── tools/
-│       ├── greeting.ts
-│       └── index.ts
+mcp-auth-demos/
+├── mcp-server/                    # Python MCP Server
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── config.py          # Environment configuration
+│   │   ├── lib/
+│   │   │   ├── auth.py            # OAuth 2.1 metadata endpoint
+│   │   │   ├── logger.py          # Logging configuration
+│   │   │   ├── middleware.py      # Authentication middleware
+│   │   │   └── transport.py       # MCP protocol transport
+│   │   └── tools/
+│   │       ├── index.py           # Tool registry
+│   │       └── greeting.py        # Greeting tool implementation
+│   ├── main.py                    # Application entry point
+│   ├── requirements.txt           # Dependencies
+│   ├── env.example               # Environment template
+│   └── setup.sh                  # Setup script
+├── greeting-mcp/                  # TypeScript MCP Server (reference)
+└── README.md                      # This documentation
 ```
+
+## Quick Start
+
+### Automated Setup
+```bash
+cd mcp-server
+chmod +x setup.sh
+./setup.sh
+```
+
+### Manual Setup
+
+1. **Navigate to the server directory**:
+   ```bash
+   cd mcp-server
+   ```
+
+2. **Create Virtual Environment** (Python 3.11+ required):
+   ```bash
+   python3.11 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure Environment**:
+   ```bash
+   cp env.example .env
+   # Edit .env with your ScaleKit credentials
+   ```
+
+5. **Run the Server**:
+   ```bash
+   python main.py
+   ```
+
+## Available Tools
+
+### greet_user
+- **Description**: Greets a user with a personalized message
+- **Required Scope**: `usr:read`
+- **Parameters**: `name` (string) - The name of the user to greet
+
+## Authentication
+
+The server implements ScaleKit OAuth 2.1 authentication:
+
+- **Bearer Token Validation**: All MCP requests require valid Bearer tokens
+- **Scope-Based Access**: Each tool requires specific OAuth scopes
+- **Public Endpoints**: OAuth discovery and health check endpoints are publicly accessible
+- **OAuth 2.1 Compliance**: Returns proper error responses
+
+## API Endpoints
+
+| Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
+| `/.well-known/oauth-protected-resource` | GET | OAuth 2.1 metadata discovery | No |
+| `/` | POST | MCP protocol communication | Yes |
+| `/health` | GET | Server health check | No |
+| `/docs` | GET | FastAPI API documentation | No |
+
+## Environment Variables
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `SK_ENV_URL` | ScaleKit environment URL | - | Yes |
+| `SK_CLIENT_ID` | ScaleKit client ID | - | Yes |
+| `SK_CLIENT_SECRET` | ScaleKit client secret | - | Yes |
+| `MCP_SERVER_ID` | Unique MCP server identifier | - | Yes |
+| `PORT` | Server port | `3002` | No |
+| `LOG_LEVEL` | Logging level | `info` | No |
+| `PROTECTED_RESOURCE_METADATA` | Custom OAuth metadata JSON | - | Yes |
+
+## Development
+
+### Adding New Tools
+
+1. **Define the tool** in `mcp-server/src/tools/index.py`:
+   ```python
+   tools_list = {
+       "your_tool": {
+           "name": "your_tool",
+           "description": "Your tool description",
+           "required_scopes": ["your:scope"],
+       },
+   }
+   ```
+
+2. **Implement the tool** in `mcp-server/src/tools/your_tool.py`:
+   ```python
+   def register_your_tool(server: Server):
+       @server.call_tool()
+       async def your_tool_function(param: str) -> dict:
+           return {"content": [{"type": "text", "text": "result"}]}
+       
+       TOOLS["your_tool"]["registered_tool"] = your_tool_function
+   ```
+
+3. **Register the tool** in `mcp-server/src/tools/index.py`:
+   ```python
+   def register_tools(server):
+       from .greeting import register_greeting_tools
+       from .your_tool import register_your_tool
+       
+       register_greeting_tools(server)
+       register_your_tool(server)
+   ```
 
 ## License
-See [LICENSE](./LICENSE).
 
----
-
-For more information, visit [Scalekit Documentation](https://docs.scalekit.com/guides/mcp/overview/) or contact your workspace admin.
+This project is licensed under the MIT License.
