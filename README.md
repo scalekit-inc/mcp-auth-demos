@@ -1,6 +1,35 @@
-# Greeting MCP Server
+<p align="center">
+  <a href="https://scalekit.com" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <img src="https://cdn.scalekit.cloud/v1/scalekit-logo-dark.svg" height="64">
+    </picture>
+  </a>
+</p>
 
-A secure Model Context Protocol (MCP) server for greeting users. This project demonstrates secure, permissioned mcp with dynamic client registration using Scalekit's platform.
+<h1 align="center">
+  Scalekit MCP Auth Demos
+</h1>
+
+<p align="center">
+  <strong>Auth stack for AI apps ⚡ Secure MCP with OAuth</strong>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@scalekit-sdk/node"><img src="https://img.shields.io/npm/v/@scalekit-sdk/node.svg" alt="npm version"></a>
+  <a href="https://github.com/scalekit-inc/mcp-auth-demos/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://docs.scalekit.com/guides/mcp/overview"><img src="https://img.shields.io/badge/docs-MCP%20Guide-blue" alt="MCP Documentation"></a>
+</p>
+
+<p align="center">
+  Secure Model Context Protocol (MCP) server demonstrating OAuth-protected AI agent interactions
+</p>
+
+## 🚀 What This Demo Shows
+
+- **OAuth-Protected MCP**: Secure AI agent access with user authentication
+- **Dynamic Client Registration**: Automatic MCP server registration and permissioning
+- **Permission Management**: Fine-grained access control for AI tools
+- **Enterprise Integration**: Connect AI agents to enterprise authentication systems
 
 ## Prerequisites
 - Node.js (v18+ recommended)
@@ -123,6 +152,24 @@ greeting-mcp/
 ## License
 See [LICENSE](./LICENSE).
 
+## Key Features
+
+- **Secure MCP Authentication**: OAuth 2.0 flow for AI agent authorization
+- **Dynamic Registration**: Automatic server setup and permission configuration
+- **Fine-Grained Permissions**: Control what AI agents can access
+- **Enterprise Ready**: Production-grade security for business environments
+- **Client Compatibility**: Works with VS Code, Claude Desktop, Cursor, and Windsurf
+
+## Additional Resources
+
+- 📚 [MCP Authentication Guide](https://docs.scalekit.com/guides/mcp/overview/)
+- 🔧 [Scalekit API Reference](https://docs.scalekit.com/apis)
+- 💬 [Community Support](https://github.com/scalekit-inc/scalekit-sdk-node-js/discussions)
+- 🎯 [Get Started with MCP](https://docs.scalekit.com/quick-start-guide)
+- ⚡ [Model Context Protocol Spec](https://modelcontextprotocol.io)
+
 ---
 
-For more information, visit [Scalekit Documentation](https://docs.scalekit.com/guides/mcp/overview/) or contact your workspace admin.
+<p align="center">
+  Made with ❤️ by <a href="https://scalekit.com">Scalekit</a>
+</p>
