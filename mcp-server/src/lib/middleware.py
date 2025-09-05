@@ -44,8 +44,8 @@ async def auth_middleware(request: Request, call_next):
     4. Returns proper OAuth 2.1 error responses on failure
     """
     try:
-        # Allow public access to OAuth discovery and health endpoints
-        if ".well-known" in request.url.path or request.url.path == "/health":
+        # Allow public access to OAuth discovery, health, and MCP root endpoints
+        if ".well-known" in request.url.path or request.url.path == "/health" or request.url.path == "/":
             return await call_next(request)
         
         # Extract Bearer token
