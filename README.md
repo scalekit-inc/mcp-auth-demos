@@ -162,11 +162,11 @@ See [LICENSE](./LICENSE).
 
 ## Additional Resources
 
-- 📚 [MCP Authentication Guide](https://docs.scalekit.com/guides/mcp/overview/)
-- 🔧 [Scalekit API Reference](https://docs.scalekit.com/apis)
-- 💬 [Community Support](https://github.com/scalekit-inc/scalekit-sdk-node-js/discussions)
-- 🎯 [Get Started with MCP](https://docs.scalekit.com/quick-start-guide)
-- ⚡ [Model Context Protocol Spec](https://modelcontextprotocol.io)
+  - 📚 [Scalekit Documentation](https://docs.scalekit.com)
+  - 🔧 [API Reference](https://docs.scalekit.com/apis/)
+  - 🚀 [Full Stack Auth Quickstart](https://docs.scalekit.com/fsa/quickstart/)
+  - 💬 [Community Examples](https://github.com/orgs/scalekit-developers/repositories)
+  - ⚡ [Model Context Protocol Spec](https://modelcontextprotocol.io)
 
 ---
 
