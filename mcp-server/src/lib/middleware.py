@@ -45,7 +45,7 @@ async def auth_middleware(request: Request, call_next):
     """
     try:
         # Allow public access to OAuth discovery, health, and MCP root endpoints
-        if ".well-known" in request.url.path or request.url.path == "/health" or request.url.path == "/":
+        if ".well-known" in request.url.path or request.url.path == "/health":
             return await call_next(request)
         
         # Extract Bearer token

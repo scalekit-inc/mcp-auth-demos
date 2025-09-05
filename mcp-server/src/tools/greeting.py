@@ -34,7 +34,7 @@ def greet_user_tool(server: Server):
             A dictionary containing the greeting message
         """
         logger.info(f"Invoked greet_user tool for name: {name}")
-        greeting = f"Hi {name}"
+        greeting = f"Hi {name}, welcome to Scalekit!"
         return {
             "content": [
                 {
