@@ -16,7 +16,7 @@ from scalekit.common.scalekit import TokenValidationOptions
 
 # OAuth 2.1 configuration
 WWW_HEADER = {
-    "WWW-Authenticate": f'Bearer realm="OAuth", resource_metadata="https://09d39dac7876.ngrok-free.app/.well-known/oauth-protected-resource"'
+    "WWW-Authenticate": f'Bearer realm="OAuth", resource_metadata="http://localhost:{config.PORT}/.well-known/oauth-protected-resource"'
 }
 
 # Initialize ScaleKit client for token validation
