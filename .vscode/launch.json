@@ -2,18 +2,28 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Node - Greeting MCP Server",
             "type": "node",
             "request": "launch",
-            "name": "Greeting MCP Server",
-            "program": "${workspaceFolder}/greeting-mcp/dist/main.js",
-            "outFiles": ["${workspaceFolder}/greeting-mcp/dist/**/*.js"],
-            "preLaunchTask": "tsc: build - greeting-mcp/tsconfig.json",
+            "program": "${workspaceFolder}/greeting-mcp-node/dist/main.js",
+            "outFiles": ["${workspaceFolder}/greeting-mcp-node/dist/**/*.js"],
+            "preLaunchTask": "tsc: build - greeting-mcp-node/tsconfig.json",
             "sourceMaps": true,
             "env": {
                 "NODE_ENV": "development"
             },
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "name": "Python - Greeting MCP Server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/greeting-mcp-python/main.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/greeting-mcp-python/src"
+            }
         }
     ]
 }
