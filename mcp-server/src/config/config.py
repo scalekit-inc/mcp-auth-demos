@@ -33,5 +33,7 @@ class Config:
     # OAuth 2.1 protected resource metadata (optional - will use defaults if not provided)
     PROTECTED_RESOURCE_METADATA = os.getenv("PROTECTED_RESOURCE_METADATA", "")
 
+    EXPECTED_AUDIENCE = os.getenv("EXPECTED_AUDIENCE", "")  # Expected audience for token validation
+
 # Global configuration instance
 config = Config()

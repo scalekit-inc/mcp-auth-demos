@@ -1,77 +1,86 @@
+#!/usr/bin/env python3
 """
-Python MCP Server with ScaleKit Authentication
-
-A simple Model Context Protocol (MCP) server that provides authenticated access
-to tools via ScaleKit OAuth 2.1. This server follows the same structure as the
-TypeScript greeting-mcp example but implemented in Python.
+FastMCP at "/" with FastAPI routes for OAuth discovery + health.
 """
 
+# ------------------------------------------------------------------------------
+# Imports
+# ------------------------------------------------------------------------------
+from fastmcp import FastMCP, Context
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from mcp.server import Server
+from starlette.middleware.cors import CORSMiddleware
+
 from src.config.config import config
 from src.lib.auth import oauth_protected_resource_handler
 from src.lib.logger import logger
 from src.lib.middleware import auth_middleware
-from src.lib.transport import setup_transport_routes
-from src.tools.index import register_tools
 
-# Initialize MCP server
-mcp_server = Server(config.SERVER_NAME)
 
-# Create FastAPI application
-app = FastAPI(
-    title=config.SERVER_NAME,
-    version=config.SERVER_VERSION,
-    description="Python MCP Server with ScaleKit Authentication"
-)
+# ------------------------------------------------------------------------------
+# MCP server and tools
+# ------------------------------------------------------------------------------
+mcp = FastMCP(config.SERVER_NAME)
 
-# Configure CORS for MCP client compatibility
+@mcp.tool(name="greet_user", description="Greets the user with a personalized message.")
+async def greet_user(name: str, ctx: Context | None = None) -> dict:
+    logger.info(f"Invoked greet_user tool for name: {name}")
+    return {"content": [{"type": "text", "text": f"Hi {name}, welcome to Scalekit!"}]}
+
+# Produce the ASGI app (MCP at root "/")
+mcp_app = mcp.http_app(path="/")
+
+
+# ------------------------------------------------------------------------------
+# FastAPI app (uses MCP lifespan)
+# ------------------------------------------------------------------------------
+app = FastAPI(lifespan=mcp_app.lifespan)
+
+# CORS on the outer app (covers MCP too)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Mcp-Protocol-Version", "Content-Type", "Authorization"],
-    expose_headers=["WWW-Authenticate"],  # Required for OAuth 2.1
+    expose_headers=["WWW-Authenticate"],
     max_age=86400,
 )
 
-# Add ScaleKit authentication middleware
+# Your existing HTTP auth middleware (keeps 401 + WWW-Authenticate behavior)
 app.middleware("http")(auth_middleware)
 
-# OAuth 2.1 Protected Resource Metadata endpoint
+
+# ------------------------------------------------------------------------------
+# Public routes (declare BEFORE mounting MCP)
+# ------------------------------------------------------------------------------
 @app.get("/.well-known/oauth-protected-resource")
 async def oauth_endpoint():
-    """OAuth 2.1 protected resource metadata endpoint"""
     return await oauth_protected_resource_handler()
 
-# Setup MCP transport routes
-setup_transport_routes(app, mcp_server)
-logger.info("Transport routes set up successfully")
-
-# Register tools
-register_tools(mcp_server)
-logger.info("Registered tools successfully")
-
-# Health check endpoint
 @app.get("/health")
 async def health_check():
-    """Health check endpoint - accessible without authentication"""
     return {
         "status": "healthy",
         "server": config.SERVER_NAME,
         "version": config.SERVER_VERSION
     }
 
-# Application entry point
+
+# ------------------------------------------------------------------------------
+# Mount MCP at "/" LAST so the above routes still win on exact match
+# ------------------------------------------------------------------------------
+app.mount("/", mcp_app)
+
+
+# ------------------------------------------------------------------------------
+# Entrypoint
+# ------------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-
-    logger.info(f"MCP server running on http://localhost:{config.PORT}")
+    logger.info(f"Server running on http://0.0.0.0:{config.PORT} (MCP at /)")
     uvicorn.run(
         app,
         host="0.0.0.0",
         port=config.PORT,
-        log_level=config.LOG_LEVEL.lower()
+        log_level=config.LOG_LEVEL.lower(),
     )

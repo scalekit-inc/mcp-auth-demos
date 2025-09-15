@@ -11,16 +11,16 @@ from fastapi import Request
 from fastapi.responses import Response
 from src.config.config import config
 from src.lib.logger import logger
+from scalekit import ScalekitClient
+from scalekit.common.scalekit import TokenValidationOptions
 
 # OAuth 2.1 configuration
-RESOURCE_ID = f"http://localhost:{config.PORT}/"
 WWW_HEADER = {
     "WWW-Authenticate": f'Bearer realm="OAuth", resource_metadata="http://localhost:{config.PORT}/.well-known/oauth-protected-resource"'
 }
 
 # Initialize ScaleKit client for token validation
 try:
-    from scalekit import ScalekitClient
     scalekit_client = ScalekitClient(
         env_url=config.SK_ENV_URL,
         client_id=config.SK_CLIENT_ID,
@@ -76,7 +76,13 @@ async def auth_middleware(request: Request, call_next):
         try:
             # Token validation with ScaleKit
             logger.info("Validating token with ScaleKit...")
-            is_valid = scalekit_client.validate_access_token(token)
+
+            options = TokenValidationOptions(
+                issuer=config.SK_ENV_URL,
+                audience=[config.EXPECTED_AUDIENCE]
+            )
+
+            is_valid = scalekit_client.validate_access_token(token, options=options)
             logger.info(f"Token validation result: {is_valid}")
             
             if not is_valid:
