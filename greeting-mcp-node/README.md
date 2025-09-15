@@ -49,7 +49,6 @@ A secure Model Context Protocol (MCP) server for greeting users. This project de
 
 ### 6. Install Dependencies
 ```sh
-cd greeting-mcp
 npm install
 npx tsc
 ```
