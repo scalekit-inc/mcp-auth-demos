@@ -12,4 +12,5 @@ export const config = {
   logLevel: 'info',
   mcpServerId: process.env.MCP_SERVER_ID || '',
   protectedResourceMetadata: process.env.PROTECTED_RESOURCE_METADATA || '',
+  expectedAudience: process.env.EXPECTED_AUDIENCE || '',
 };

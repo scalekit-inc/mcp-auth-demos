@@ -18,14 +18,19 @@ A secure Model Context Protocol (MCP) server for greeting users. This project de
 - Copy your **Environment URL**, **Client ID**, and **Client Secret** from the Settings -> API Credentials section on Scalekit dashboard.
 
 ### 3. Configure Environment Variables
-- Create/Update `.env` file in the root of the `greeting-mcp` directory.
+- Create or update a `.env` file in the root of the `greeting-mcp-node` directory.
 - Add the following variables:
 	```env
+	PORT=3002 # (Optional) Port to run the server on. Defaults to 3002 if not set.
 	SK_ENV_URL=your_environment_url
 	SK_CLIENT_ID=your_client_id
 	SK_CLIENT_SECRET=your_client_secret
 	# Add MCP_SERVER_ID and PROTECTED_RESOURCE_METADATA in later steps
+	# Add EXPECTED_AUDIENCE in later steps
 	```
+
+	- `PORT`: (optional) The port the server will listen on. Defaults to 3002.
+	- `EXPECTED_AUDIENCE`: (required for some deployments) Should match the MCP server URL as registered in the Scalekit dashboard (e.g., `http://localhost:3002/`).
 
 ### 4. Set Up Permissions
 - In [app.scalekit.com](https://app.scalekit.com), navigate to **Authorization** > **Permissions**.
@@ -33,11 +38,11 @@ A secure Model Context Protocol (MCP) server for greeting users. This project de
 	- **Name:** `usr:read`
 	- **Description:** `Reading basic information of the users`
 
+
 ### 5. Register the MCP Server
 - Go to **MCP Servers** in [app.scalekit.com](https://app.scalekit.com).
 - Register a new MCP server:
-	- **Server Identifier:** `http://localhost:3002/` [make sure you have put a trailing slash at the end]
-	- **Enable Dynamic Client Registration:** (check the box)
+	- **Server Identifier:** `http://localhost:3002/` (ensure a trailing slash)
 - After creation, copy:
 	- **MCP Server ID** (looks like `res_XXX`)
 	- **Protected Resource Metadata** (as JSON)
@@ -45,20 +50,23 @@ A secure Model Context Protocol (MCP) server for greeting users. This project de
 	```env
 	MCP_SERVER_ID=res_XXX
 	PROTECTED_RESOURCE_METADATA='{...minified_json...}'
+	EXPECTED_AUDIENCE='http://localhost:3002/'
 	```
 
-### 6. Install Dependencies
+
+### 6. Install Dependencies and Build
 ```sh
 npm install
-npx tsc
+npm run build
 ```
+
 
 ### 7. Run the Server
 ```sh
 npm run start
 ```
 
-The server will start on `http://localhost:3002`.
+The server will start on `http://localhost:3002` (or the port you set in `.env`).
 
 ### 8. Connect with an MCP Client
 - Use an MCP client (e.g., VS Code Insider with MCP extension).
@@ -98,25 +106,6 @@ If your MCP client does not support OAuth, use the following in your `mcp.json`.
 ```
 
 ---
-
-## Project Structure
-```
-greeting-mcp/
-├── package.json
-├── tsconfig.json
-├── src/
-│   ├── main.ts
-│   ├── config/
-│   │   └── config.ts
-│   ├── lib/
-│   │   ├── auth.ts
-│   │   ├── logger.ts
-│   │   ├── middleware.ts
-│   │   └── transport.ts
-│   └── tools/
-│       ├── greeting.ts
-│       └── index.ts
-```
 
 ## License
 See [LICENSE](./LICENSE).
