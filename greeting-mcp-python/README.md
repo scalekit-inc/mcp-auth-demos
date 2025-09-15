@@ -10,35 +10,10 @@ A production-ready Python-based Model Context Protocol (MCP) server with ScaleKi
 - **Comprehensive Logging**: Structured logging for debugging and monitoring
 - **CORS Support**: Cross-origin resource sharing for web client compatibility
 
-## Project Structure
-
-```
-mcp-auth-demos/
-├── mcp-server/                    # Python MCP Server
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── config.py          # Environment configuration
-│   │   ├── lib/
-│   │   │   ├── auth.py            # OAuth 2.1 metadata endpoint
-│   │   │   ├── logger.py          # Logging configuration
-│   │   │   ├── middleware.py      # Authentication middleware
-│   │   │   └── transport.py       # MCP protocol transport
-│   │   └── tools/
-│   │       ├── index.py           # Tool registry
-│   │       └── greeting.py        # Greeting tool implementation
-│   ├── main.py                    # Application entry point
-│   ├── requirements.txt           # Dependencies
-│   ├── env.example               # Environment template
-│   └── setup.sh                  # Setup script
-├── greeting-mcp/                  # TypeScript MCP Server (reference)
-└── README.md                      # This documentation
-```
-
 ## Quick Start
 
 ### Automated Setup
 ```bash
-cd mcp-server
 chmod +x setup.sh
 ./setup.sh
 ```
@@ -59,13 +34,25 @@ chmod +x setup.sh
 3. **Configure Environment**:
    ```bash
    cp env.example .env
-   # Edit .env with your ScaleKit credentials
+   # Edit .env with your ScaleKit credentials and server settings
    ```
+
+   - `PORT`: (optional) The port the server will listen on. Defaults to 3003.
+   - `SK_ENV_URL`: Your ScaleKit environment URL (required).
+   - `SK_CLIENT_ID`: Your ScaleKit client ID (required).
+   - `SK_CLIENT_SECRET`: Your ScaleKit client secret (required).
+   - `MCP_SERVER_ID`: Unique MCP server identifier (required).
+   - `PROTECTED_RESOURCE_METADATA`: Minified JSON string for OAuth protected resource metadata (required; copy from Scalekit dashboard and remove all whitespace).
+   - `EXPECTED_AUDIENCE`: The MCP server URL as registered in the Scalekit dashboard (required; e.g., `http://localhost:3003/`).
+
+   > **Note:** After editing `.env`, restart the server for changes to take effect.
 
 4. **Run the Server**:
    ```bash
    python main.py
    ```
+
+   The server will start on `http://localhost:3003` (or the port you set in `.env`).
 
 ## Available Tools
 
@@ -100,15 +87,16 @@ The server implements ScaleKit OAuth 2.1 authentication:
 | `SK_CLIENT_ID` | ScaleKit client ID | - | Yes |
 | `SK_CLIENT_SECRET` | ScaleKit client secret | - | Yes |
 | `MCP_SERVER_ID` | Unique MCP server identifier | - | Yes |
-| `PORT` | Server port | `3002` | No |
+| `PORT` | Server port | `3003` | No |
 | `LOG_LEVEL` | Logging level | `info` | No |
-| `PROTECTED_RESOURCE_METADATA` | Custom OAuth metadata JSON | - | Yes |
+| `PROTECTED_RESOURCE_METADATA` | Minified OAuth protected resource metadata JSON (from Scalekit dashboard) | - | Yes |
+| `EXPECTED_AUDIENCE` | The MCP server URL as registered in the Scalekit dashboard (e.g., `http://localhost:3003/`) | - | Yes |
 
 ## Development
 
 ### Adding New Tools
 
-1. **Define the tool** in `mcp-server/src/tools/index.py`:
+1. **Define the tool** in `src/tools/index.py`:
    ```python
    tools_list = {
        "your_tool": {
@@ -119,7 +107,7 @@ The server implements ScaleKit OAuth 2.1 authentication:
    }
    ```
 
-2. **Implement the tool** in `mcp-server/src/tools/your_tool.py`:
+2. **Implement the tool** in `src/tools/your_tool.py`:
    ```python
    def register_your_tool(server: Server):
        @server.call_tool()
@@ -129,7 +117,7 @@ The server implements ScaleKit OAuth 2.1 authentication:
        TOOLS["your_tool"]["registered_tool"] = your_tool_function
    ```
 
-3. **Register the tool** in `mcp-server/src/tools/index.py`:
+3. **Register the tool** in `src/tools/index.py`:
    ```python
    def register_tools(server):
        from .greeting import register_greeting_tools

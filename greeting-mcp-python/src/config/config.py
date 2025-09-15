@@ -19,7 +19,7 @@ class Config:
     SERVER_VERSION = "1.0.0"
     
     # Server settings
-    PORT = int(os.getenv("PORT", 3002))  # Default port for MCP server
+    PORT = int(os.getenv("PORT", 3003))  # Default port for MCP server
     LOG_LEVEL = os.getenv("LOG_LEVEL", "info")  # Logging level (debug, info, warning, error)
     
     # ScaleKit OAuth 2.1 configuration

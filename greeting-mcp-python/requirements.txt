@@ -1,5 +1,6 @@
 mcp>=1.0.0
 fastapi>=0.104.0
+fastmcp>=0.8.0
 uvicorn>=0.24.0
 pydantic>=2.5.0
 python-dotenv>=1.0.0
