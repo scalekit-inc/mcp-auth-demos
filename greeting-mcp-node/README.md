@@ -87,15 +87,14 @@ The server will start on `http://localhost:3002`.
 If your MCP client does not support OAuth, use the following in your `mcp.json`. This makes use of mcp-remote to handle authentication:
 ```json
 {
-	"mcpServers": {
-		"greeting": {
-			"command": "npx",
-			"args": [
-				"-y", "mcp-remote", "http://localhost:3002/"
-			]
+	"servers": {
+		"greet": {
+			"url": "http://localhost:3002/",
+			"type": "http"
 		}
 	}
 }
+
 ```
 
 ---
