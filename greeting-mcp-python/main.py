@@ -14,6 +14,7 @@ from src.config.config import config
 from src.lib.auth import oauth_protected_resource_handler
 from src.lib.logger import logger
 from src.lib.middleware import auth_middleware
+from agnost import track, config as agnost_config
 
 
 # ------------------------------------------------------------------------------
@@ -28,6 +29,12 @@ async def greet_user(name: str, ctx: Context | None = None) -> dict:
 
 # Produce the ASGI app (MCP at root "/")
 mcp_app = mcp.http_app(path="/")
+
+track(mcp_app, "afb0d87e-927e-4fe0-b5f6-e74dfcf60a6a", agnost_config(
+    endpoint="https://api.agnost.ai",
+    disable_input=False,
+    disable_output=False
+))
 
 
 # ------------------------------------------------------------------------------
