@@ -1,74 +1,54 @@
 #!/usr/bin/env python3
 """
-FastMCP at "/" with FastAPI routes for OAuth discovery + health.
+FastMCP Server with OAuth 2.1 Authentication
+--------------------------------------------
+
+This file composes three layers:
+1. FastMCP server exposing tools (MCP protocol endpoints)
+2. Auth middleware (validates Bearer tokens via ScaleKit SDK)
+3. Outer FastAPI app for public routes and CORS handling
+
+Final routes:
+- /.well-known/oauth-protected-resource/mcp  → OAuth discovery endpoint
+- /health                                   → Health check
+- /mcp/*                                   → Protected MCP API (tools)
 """
 
-# ------------------------------------------------------------------------------
-# Imports
-# ------------------------------------------------------------------------------
 from fastmcp import FastMCP, Context
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-import logging
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware import Middleware
-from starlette.requests import Request
-from starlette.responses import Response
-
 from src.config.config import config
 from src.lib.auth import oauth_protected_resource_handler
 from src.lib.logger import logger
-from src.lib.middleware import AuthMiddleware
-
-class LoggingMiddleware(BaseHTTPMiddleware):
-        async def dispatch(self, request: Request, call_next):
-            # Log request
-            body = await request.body()
-            logger.info(
-                f"Request: {request.method} {request.url}\n"
-                f"Headers: {dict(request.headers)}\n"
-                f"Body: {body.decode('utf-8', errors='replace')}"
-            )
-            response: Response = await call_next(request)
-            resp_body = b""
-            async for chunk in response.body_iterator:
-                resp_body += chunk
-            # Reconstruct response for downstream
-            new_response = Response(
-                content=resp_body,
-                status_code=response.status_code,
-                headers=dict(response.headers),
-                media_type=response.media_type
-            )
-            logger.info(
-                f"Response: {response.status_code}\n"
-                f"Headers: {dict(response.headers)}\n"
-                f"Body: {resp_body.decode('utf-8', errors='replace')}"
-            )
-            return new_response
+from src.lib.middleware import auth_middleware
 
 # ------------------------------------------------------------------------------
-# MCP server and tools
+# Define MCP tools
 # ------------------------------------------------------------------------------
 mcp = FastMCP(config.SERVER_NAME)
 
 @mcp.tool(name="greet_user", description="Greets the user with a personalized message.")
 async def greet_user(name: str, ctx: Context | None = None) -> dict:
+    """Example tool that returns a greeting."""
     logger.info(f"Invoked greet_user tool for name: {name}")
     return {"content": [{"type": "text", "text": f"Hi {name}, welcome to Scalekit!"}]}
 
-# Produce the ASGI app (MCP at root "/")
+# Create MCP ASGI app at root (no nested /mcp)
 mcp_app = mcp.http_app(path="/")
 
 # ------------------------------------------------------------------------------
-# FastAPI app (uses MCP lifespan)
+# Protected sub-app (adds OAuth middleware)
+# ------------------------------------------------------------------------------
+protected_app = FastAPI(lifespan=mcp_app.lifespan)
+protected_app.middleware("http")(auth_middleware)
+protected_app.mount("", mcp_app)
+
+# ------------------------------------------------------------------------------
+# Outer app (CORS + public endpoints)
 # ------------------------------------------------------------------------------
 app = FastAPI(lifespan=mcp_app.lifespan)
 
-protected_app = FastAPI(middleware=[Middleware(AuthMiddleware)], lifespan=mcp_app.lifespan)
-protected_app.mount("", mcp_app)
-
-# CORS on the outer app (covers MCP too)
+# Enable CORS for client compatibility (e.g., MCP Inspector)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -79,40 +59,26 @@ app.add_middleware(
     max_age=86400,
 )
 
-# Your existing HTTP auth middleware (keeps 401 + WWW-Authenticate behavior)
-# app.add_middleware(AuthMiddleware)
-# app.add_middleware(LoggingMiddleware)
-
-
-# ------------------------------------------------------------------------------
-# Public routes (declare BEFORE mounting MCP)
-# ------------------------------------------------------------------------------
+# Public endpoints
 @app.get("/.well-known/oauth-protected-resource/mcp")
 async def oauth_endpoint():
+    """OAuth 2.1 resource metadata endpoint for ScaleKit."""
     return await oauth_protected_resource_handler()
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "server": config.SERVER_NAME,
-        "version": config.SERVER_VERSION
-    }
+    """Health check endpoint."""
+    return {"status": "healthy", "server": config.SERVER_NAME, "version": config.SERVER_VERSION}
 
-
-# ------------------------------------------------------------------------------
-# Mount MCP at "/" LAST so the above routes still win on exact match
-# ------------------------------------------------------------------------------
+# Mount protected MCP app at /mcp
 app.mount("/mcp", protected_app)
-
 
 # ------------------------------------------------------------------------------
 # Entrypoint
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    logger.info(f"Server running on http://0.0.0.0:{config.PORT} (MCP at /)")
-
+    logger.info(f"🚀 Server running on http://0.0.0.0:{config.PORT} (MCP at /mcp)")
     uvicorn.run(
         app,
         host="0.0.0.0",
