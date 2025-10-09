@@ -13,10 +13,11 @@ from src.config.config import config
 from src.lib.logger import logger
 from scalekit import ScalekitClient
 from scalekit.common.scalekit import TokenValidationOptions
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 # OAuth 2.1 configuration
 WWW_HEADER = {
-    "WWW-Authenticate": f'Bearer realm="OAuth", resource_metadata="http://localhost:{config.PORT}/.well-known/oauth-protected-resource"'
+    "WWW-Authenticate": f'Bearer realm="OAuth", resource_metadata="http://localhost:{config.PORT}/.well-known/oauth-protected-resource/mcp"'
 }
 
 # Initialize ScaleKit client for token validation
@@ -33,85 +34,51 @@ except Exception as e:
     scalekit_client = None
     SCALEKIT_AVAILABLE = False
 
-async def auth_middleware(request: Request, call_next):
-    """
-    Authentication middleware for MCP requests following ScaleKit OAuth 2.1 specification.
-    
-    This middleware:
-    1. Allows public access to well-known endpoints and health checks
-    2. Extracts Bearer tokens from Authorization headers
-    3. Validates tokens using ScaleKit SDK
-    4. Returns proper OAuth 2.1 error responses on failure
-    """
-    try:
-        # Allow public access to OAuth discovery, health, and MCP root endpoints
-        if ".well-known" in request.url.path or request.url.path == "/health":
-            return await call_next(request)
-        
-        # Extract Bearer token
+class AuthMiddleware:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        request = Request(scope, receive=receive)
+        path = scope["path"]
+
+        # Allow public routes
+        if ".well-known" in path or path == "/health":
+            return await self.app(scope, receive, send)
+
         auth_header = request.headers.get("authorization")
-        logger.info(f"Auth request for {request.method} {request.url.path}")
-        
+        logger.info(f"Auth request for {request.method} {path}")
+
         if not auth_header or not auth_header.startswith("Bearer "):
-            logger.warning(f"Missing Bearer token for {request.method} {request.url.path}")
-            return Response(
-                content='{"error": "Missing Bearer token"}',
-                media_type="application/json",
-                status_code=401,
-                headers=WWW_HEADER
-            )
-        
+            headers = {
+                "WWW-Authenticate": (
+                    f'Bearer realm="OAuth", '
+                    f'resource_metadata="http://localhost:{config.PORT}/.well-known/oauth-protected-resource/mcp"'
+                )
+            }
+            response = Response('{"error": "Missing Bearer token"}', status_code=401, media_type="application/json", headers=headers)
+            await response(scope, receive, send)
+            return
+
         token = auth_header.split("Bearer ")[1].strip()
         logger.info(f"Token extracted, length: {len(token)}")
-        
-        if not SCALEKIT_AVAILABLE:
-            logger.error("ScaleKit SDK not available for token validation")
-            return Response(
-                content='{"error": "Authentication service unavailable"}',
-                media_type="application/json",
-                status_code=401,
-                headers=WWW_HEADER
-            )
-        
+
         try:
-            # Token validation with ScaleKit
-            logger.info("Validating token with ScaleKit...")
-
-            options = TokenValidationOptions(
-                issuer=config.SK_ENV_URL,
-                audience=[config.EXPECTED_AUDIENCE]
-            )
-
+            options = TokenValidationOptions(issuer=config.SK_ENV_URL, audience=[config.EXPECTED_AUDIENCE])
             is_valid = scalekit_client.validate_access_token(token, options=options)
             logger.info(f"Token validation result: {is_valid}")
-            
             if not is_valid:
-                logger.warning(f"Token validation failed for {request.method} {request.url.path}")
-                return Response(
-                    content='{"error": "Invalid token"}',
-                    media_type="application/json",
-                    status_code=401,
-                    headers=WWW_HEADER
-                )
-            
-            logger.info(f"Authentication successful for {request.method} {request.url.path}")
-            return await call_next(request)
-            
+                response = Response('{"error": "Invalid token"}', status_code=401, media_type="application/json")
+                await response(scope, receive, send)
+                return
         except Exception as e:
-            logger.error(f"Token validation exception: {str(e)}")
-            logger.error(f"Exception type: {type(e).__name__}")
-            return Response(
-                content='{"error": "Token validation failed"}',
-                media_type="application/json",
-                status_code=401,
-                headers=WWW_HEADER
-            )
-        
-    except Exception as e:
-        logger.error(f"Authentication error: {str(e)}")
-        return Response(
-            content='{"error": "Authentication failed"}',
-            media_type="application/json",
-            status_code=401,
-            headers=WWW_HEADER
-        )
+            logger.error(f"Token validation failed: {e}")
+            response = Response('{"error": "Authentication failed"}', status_code=401, media_type="application/json")
+            await response(scope, receive, send)
+            return
+
+        # If authenticated, continue to next ASGI app (MCP)
+        await self.app(scope, receive, send)
