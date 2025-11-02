@@ -1,115 +1,171 @@
-# Greeting MCP Server
+## Greeting MCP Server
 
-A secure Model Context Protocol (MCP) server for greeting users. This project demonstrates secure, permissioned mcp with dynamic client registration using Scalekit's platform.
+A secure Model Context Protocol (MCP) server for greeting users with OAuth 2.1 authentication using Scalekit.
 
-## Prerequisites
-- Node.js (v18+ recommended)
-- npm
-- Access to [app.scalekit.com](https://app.scalekit.com) with workspace
-- (Optional) VS Code Insider with MCP extension, or any compatible MCP client
+### Quick Start
 
-## Getting Started
+```bash
+# 1. Install and build
+npm install && npm run build
 
-### 1. Enable Full Stack Authentication
-- Go to [app.scalekit.com](https://app.scalekit.com) and log in to your workspace.
-- Enable **Full Stack Authentication** for your workspace.
+# 2. Configure environment (see detailed setup below)
+cp .env.example .env
+# Edit .env with your Scalekit credentials
 
-### 2. Obtain Credentials
-- Copy your **Environment URL**, **Client ID**, and **Client Secret** from the Settings -> API Credentials section on Scalekit dashboard.
+# 3. Start the server
+npm run start
 
-### 3. Configure Environment Variables
-- Create or update a `.env` file in the root of the `greeting-mcp-node` directory.
-- Add the following variables:
-	```env
-	PORT=3002 # (Optional) Port to run the server on. Defaults to 3002 if not set.
-	SK_ENV_URL=your_environment_url
-	SK_CLIENT_ID=your_client_id
-	SK_CLIENT_SECRET=your_client_secret
-	# Add MCP_SERVER_ID and PROTECTED_RESOURCE_METADATA in later steps
-	# Add EXPECTED_AUDIENCE in later steps
-	```
-
-	- `PORT`: (optional) The port the server will listen on. Defaults to 3002.
-	- `EXPECTED_AUDIENCE`: (required for some deployments) Should match the MCP server URL as registered in the Scalekit dashboard (e.g., `http://localhost:3002/`).
-
-### 4. Set Up Permissions
-- In [app.scalekit.com](https://app.scalekit.com), navigate to **Authorization** > **Permissions**.
-- Create a permission:
-	- **Name:** `usr:read`
-	- **Description:** `Reading basic information of the users`
-
-
-### 5. Register the MCP Server
-- Go to **MCP Servers** in [app.scalekit.com](https://app.scalekit.com).
-- Register a new MCP server:
-	- **Server Identifier:** `http://localhost:3002/` (ensure a trailing slash)
-- After creation, copy:
-	- **MCP Server ID** (looks like `res_XXX`)
-	- **Protected Resource Metadata** (as JSON)
-- Add these to your `.env` file. **Minify** the JSON for `PROTECTED_RESOURCE_METADATA` (remove all whitespace):
-	```env
-	MCP_SERVER_ID=res_XXX
-	PROTECTED_RESOURCE_METADATA='{...minified_json...}'
-	EXPECTED_AUDIENCE='http://localhost:3002/'
-	```
-
-
-### 6. Install Dependencies and Build
-```sh
-npm install
-npm run build
+# 4. Test the server
+curl http://localhost:3002/.well-known/oauth-protected-resource
 ```
 
+### Prerequisites
 
-### 7. Run the Server
-```sh
+- Node.js (v18+)
+- npm
+- [Scalekit workspace](https://app.scalekit.com)
+- MCP client (refer to your MCP host documentation)
+
+### Setup Guide
+
+### 1. Configure Scalekit
+
+**Enable Full Stack Authentication**
+
+1. Go to [app.scalekit.com](https://app.scalekit.com)
+2. Log in to your workspace
+3. Enable **Full Stack Authentication**
+
+**Get API Credentials**
+
+1. Navigate to **Settings** → **API Credentials**
+2. Copy:
+   - Environment URL
+   - Client ID
+   - Client Secret
+
+### 2. Set Up Environment
+
+Create a `.env` file:
+
+```bash
+# Required: ScaleKit Configuration
+SCALEKIT_ENVIRONMENT_URL=your_environment_url
+SCALEKIT_CLIENT_ID=your_client_id
+SCALEKIT_CLIENT_SECRET=your_client_secret
+```
+
+💡 **Note**: The remaining configuration (MCP server ID, OAuth metadata, etc.) has sensible defaults in `src/config/config.ts`. You can customize these values directly in the config file if needed.
+
+⚠️ **Important**: Replace `your_*` values with actual credentials from Scalekit.
+
+### 3. Configure Permissions
+
+1. In Scalekit, go to **Authorization** → **Permissions**
+2. Create a permission:
+   - **Name**: `usr:read`
+   - **Description**: `Reading basic information of the users`
+
+### 4. Register MCP Server
+
+1. In Scalekit, go to **MCP Servers**
+2. Click **Add MCP Server**
+3. Configure:
+   - **Name**: `Greeting MCP Server` (or your preferred name)
+   - **Server URL**: `http://localhost:3002/` (ensure trailing slash)
+   - Enable **Dynamic Client Registration**
+   - **Scopes**: Add `usr:read`
+4. After creation, copy:
+   - **MCP Server ID** (looks like `res_XXX`)
+   - **Protected Resource Metadata** (JSON)
+
+**Update the configuration in `src/config/config.ts`:**
+
+The application has sensible defaults, but you should update these values with your actual MCP server details:
+
+```typescript
+// In src/config/config.ts, update these values:
+mcpServerId: process.env.MCP_SERVER_ID || 'res_XXX', // Replace with your actual MCP Server ID
+protectedResourceMetadata: process.env.PROTECTED_RESOURCE_METADATA || '{"authorization_servers":["https://your-env.scalekit.com/resources/res_XXX"],"bearer_methods_supported":["header"],"resource":"http://localhost:3002/","resource_documentation":"https://docs.scalekit.com","scopes_supported":["usr:read"]}',
+expectedAudience: process.env.EXPECTED_AUDIENCE || 'http://localhost:3002/',
+```
+
+💡 **Tip**: You can either set these as environment variables in your `.env` file or directly modify the default values in `config.ts`.
+
+### 5. Install and Run
+
+```bash
+# Install dependencies
+npm install
+
+# Build the project
+npm run build
+
+# Start the server
 npm run start
 ```
 
-The server will start on `http://localhost:3002` (or the port you set in `.env`).
+✅ **Check**: Server should start on `http://localhost:3002`
 
-### 8. Connect with an MCP Client
-- Use an MCP client (e.g., VS Code Insider with MCP extension).
-- Open your `mcp.json` and paste:
-	```json
-	{
-		"servers": {
-			"greeting": {
-				"url": "http://localhost:3002/",
-				"type": "http"
-			}
-		},
-		"inputs": []
-	}
-	```
-- Click **Start**.
+### 6. Connect MCP Client
 
-### 9. Authorize and Test
-- Allow all prompts in the MCP client.
-- Log in with your email address and authorize when prompted.
-- In your MCP client, enter a prompt like:
-	> Can you please greet John?
-- You should see the greeting tool being invoked (allow if prompted).
+Your MCP client needs to be configured to authenticate with Scalekit (the authorization server for this MCP server).
 
-#### Note - For Non-OAuth MCP Clients
-If your MCP client does not support OAuth, use the following in your `mcp.json`. This makes use of mcp-remote to handle authentication:
+**For VS Code Insider with MCP Extension:**
+Open your `mcp.json` and add:
+
 ```json
 {
-	"servers": {
-		"greet": {
-			"url": "http://localhost:3002/",
-			"type": "http"
-		}
-	}
+  "servers": {
+    "greeting": {
+      "url": "http://localhost:3002/",
+      "type": "http"
+    }
+  },
+  "inputs": []
 }
-
 ```
 
----
+**For other MCP clients:**
+Refer to your MCP host documentation for instructions on how to:
 
-## License
+- Configure OAuth authentication servers
+- Add Scalekit as an authorization provider
+- Connect to OAuth-protected MCP servers
+
+Your MCP client will discover the Scalekit authorization server automatically through the `.well-known/oauth-protected-resource` endpoint.
+
+### 7. Test and Authorize
+
+1. Start your MCP client
+2. Follow your MCP client's authentication flow
+3. Log in with your email when prompted by Scalekit
+4. Authorize the requested permissions
+5. Test with a prompt like:
+   ```
+   Can you please greet John?
+   ```
+
+✅ **Success**: The greeting tool should be invoked and return a personalized greeting.
+
+### Verify Setup
+
+### Check Server Health
+
+```bash
+curl http://localhost:3002/.well-known/oauth-protected-resource
+```
+
+### Test Authentication Flow
+
+1. Start your MCP client
+2. Follow the authentication redirects to Scalekit
+3. Verify successful authorization in your MCP client
+
+### License
+
 See [LICENSE](./LICENSE).
 
 ---
 
-For more information, visit [Scalekit Documentation](https://docs.scalekit.com/guides/mcp/overview/) or contact your workspace admin.
+**Need help?** Visit [Scalekit Documentation](https://docs.scalekit.com/mcp/oauth)
