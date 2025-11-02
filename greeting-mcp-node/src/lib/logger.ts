@@ -5,8 +5,9 @@ export const logger = winston.createLogger({
   level: config.logLevel,
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.printf(({ level, message, timestamp }) => {
-      return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+    winston.format.printf(({ level, message, timestamp, ...metadata }) => {
+      const meta = Object.keys(metadata).length ? ` ${JSON.stringify(metadata)}` : '';
+      return `[${timestamp}] ${level.toUpperCase()}: ${message}${meta}`;
     })
   ),
   transports: [
