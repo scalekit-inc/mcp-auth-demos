@@ -14,18 +14,23 @@ from fastmcp import FastMCP
 from fastmcp.server.auth.providers.scalekit import ScalekitProvider
 from fastmcp.server.dependencies import AccessToken, get_access_token
 
+from scalekit import ScalekitClient
+import uuid
+import requests
+
 # Load environment variables from .env file when available.
 load_dotenv()
+
+skClient = ScalekitClient(os.getenv("SCALEKIT_ENVIRONMENT_URL"), os.getenv("SCALEKIT_CLIENT_ID"), os.getenv("SCALEKIT_CLIENT_SECRET"))
 
 mcp = FastMCP(
     "Todo Server",
     stateless_http=True,
     auth=ScalekitProvider(
         environment_url=os.getenv("SCALEKIT_ENVIRONMENT_URL"),
-        client_id=os.getenv("SCALEKIT_CLIENT_ID"),
         resource_id=os.getenv("SCALEKIT_RESOURCE_ID"),
         # FastMCP appends /mcp automatically; keep base URL with trailing slash only.
-        mcp_url=os.getenv("MCP_URL"),
+        base_url=os.getenv("MCP_BASE_URL"),
     ),
 )
 
@@ -56,8 +61,9 @@ def _require_scope(scope: str) -> Optional[str]:
     return None
 
 
+# Zluri's system saves this todo task via internal api with Auth0 token
 @mcp.tool
-def create_todo(title: str, description: Optional[str] = None) -> dict:
+def create_internal_todo(title: str, description: Optional[str] = None) -> dict:
     """Create a new todo item."""
     error = _require_scope("todo:write")
     if error:
@@ -66,77 +72,64 @@ def create_todo(title: str, description: Optional[str] = None) -> dict:
     todo = TodoItem(id=str(uuid.uuid4()), title=title, description=description)
     _TODO_STORE[todo.id] = todo
 
-    return {"todo": todo.to_dict()}
+    # this is the access token that mcp client sent. open it and get the user_id
+    token: AccessToken = get_access_token()
+    user_id = token.claims.get("email")
 
+    # Get Auth0 access token from Zluri's internal api connected account
+    auth0_connected_account = skClient.actions.get_or_create_connected_account(connection_name="AUTH0", identifier=user_id).connected_account
+    tokens = auth0_connected_account.authorization_details["oauth_token"]
+    auth0_access_token = tokens["access_token"]
+    print("Zluri's Auth0 Access Token:", auth0_access_token)
 
-@mcp.tool
-def list_todos(completed: Optional[bool] = None) -> dict:
-    """List all todos, optionally filtering by completion state."""
-    error = _require_scope("todo:read")
-    if error:
-        return {"error": error}
-
-    todos = [
-        todo.to_dict()
-        for todo in _TODO_STORE.values()
-        if completed is None or todo.completed == completed
-    ]
-    return {"todos": todos}
-
-
-@mcp.tool
-def get_todo(todo_id: str) -> dict:
-    """Fetch a single todo by its identifier."""
-    error = _require_scope("todo:read")
-    if error:
-        return {"error": error}
-
-    todo = _TODO_STORE.get(todo_id)
-    if todo is None:
-        return {"error": f"Todo `{todo_id}` not found."}
+    # Call Zuluri internal api to create the todo task
+    try:
+        headers = {
+            "Authorization": f"Bearer {auth0_access_token}",
+            "Content-Type": "application/json",
+        }
+        payload = {"name": todo.title}
+        resp = requests.post("https://fd05b447-7822-4c2b-bb91-5bed8ff78b07.mock.pstmn.io/todo", json=payload, headers=headers, timeout=10)
+        print("Zluri's internal API response:", resp.status_code, resp.text)
+    except Exception as e:
+        print("Failed to call external API:", e)
 
     return {"todo": todo.to_dict()}
 
-
+# Zluri's system saves this todo task via external api with Auth0 token
 @mcp.tool
-def update_todo(
-    todo_id: str,
-    title: Optional[str] = None,
-    description: Optional[str] = None,
-    completed: Optional[bool] = None,
-) -> dict:
-    """Update fields on an existing todo."""
+def create_external_todo(title: str, description: Optional[str] = None) -> dict:
+    """Create a new todo item."""
     error = _require_scope("todo:write")
     if error:
         return {"error": error}
 
-    todo = _TODO_STORE.get(todo_id)
-    if todo is None:
-        return {"error": f"Todo `{todo_id}` not found."}
+    todo = TodoItem(id=str(uuid.uuid4()), title=title, description=description)
+    _TODO_STORE[todo.id] = todo
 
-    if title is not None:
-        todo.title = title
-    if description is not None:
-        todo.description = description
-    if completed is not None:
-        todo.completed = completed
+    # This is the access token that mcp client sent. open it and get the user_id
+    token: AccessToken = get_access_token()
+    user_id = token.claims.get("email")
+
+    # Get Zluri API Key connected account
+    ext_connected_account = skClient.actions.get_or_create_connected_account(connection_name="zluri", identifier=user_id).connected_account
+    tokens = ext_connected_account.authorization_details["oauth_token"]
+    ext_access_token = tokens["access_token"]
+    print("Zluri's external api-key or token:", ext_access_token)
+
+    # Call Zuluri external api to create the todo task
+    try:
+        headers = {
+            "Authorization": f"{ext_access_token}",
+            "Content-Type": "application/json",
+        }
+        payload = {"name": todo.title}
+        resp = requests.post("https://fd05b447-7822-4c2b-bb91-5bed8ff78b07.mock.pstmn.io/todo-ext", json=payload, headers=headers, timeout=10)
+        print("Zluri's External API response:", resp.status_code, resp.text)
+    except Exception as e:
+        print("Failed to call external API:", e)
 
     return {"todo": todo.to_dict()}
-
-
-@mcp.tool
-def delete_todo(todo_id: str) -> dict:
-    """Remove a todo from the store."""
-    error = _require_scope("todo:write")
-    if error:
-        return {"error": error}
-
-    todo = _TODO_STORE.pop(todo_id, None)
-    if todo is None:
-        return {"error": f"Todo `{todo_id}` not found."}
-
-    return {"deleted": todo_id}
-
 
 if __name__ == "__main__":
     mcp.run(transport="http", port=int(os.getenv("PORT", "3002")))
