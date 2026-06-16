@@ -1,0 +1,8 @@
+source 'https://rubygems.org'
+
+gem 'rails', '~> 7.1'
+gem 'puma', '~> 6.0'
+gem 'rack-cors'
+gem 'jwt', '~> 2.8'
+gem 'mcp'
+gem 'dotenv-rails', groups: [:development, :test]
