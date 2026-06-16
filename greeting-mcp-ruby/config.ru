@@ -1,5 +1,6 @@
 require_relative 'config/environment'
 require 'mcp'
+require 'rack/cors'
 require_relative 'lib/scalekit_token_validator'
 require_relative 'app/middleware/scalekit_bearer_auth'
 require_relative 'app/tools/who_am_i_tool'
@@ -18,10 +19,22 @@ mcp_with_auth = Rack::Builder.new do
   run mcp_transport
 end
 
-# Public paths → Rails (well-known discovery + health)
-# Everything else → MCP transport with auth
-run ->(env) {
+router = ->(env) {
   env['PATH_INFO'].start_with?('/.well-known', '/health') ?
     Rails.application.call(env) :
     mcp_with_auth.call(env)
+}
+
+# CORS wraps the entire app so both public endpoints and MCP requests get headers
+run Rack::Builder.new {
+  use Rack::Cors do
+    allow do
+      origins '*'
+      resource '*',
+        headers: :any,
+        methods: %i[get post options],
+        expose:  ['WWW-Authenticate']
+    end
+  end
+  run router
 }

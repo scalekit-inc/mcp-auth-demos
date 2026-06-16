@@ -1,13 +1,12 @@
 class InspectTokenTool < MCP::Tool
-  description 'Extracts and logs a specific claim from the access token. ' \
-              'Pass a claim key (e.g. "sub", "email", "org_id") to inspect it. ' \
-              'Omit the key to see all available claims.'
+  description 'Returns the value of a specific JWT claim from the access token. ' \
+              'If the claim key is not found, lists all available claim keys.'
 
   input_schema(
     properties: {
       claim_key: {
         type:        'string',
-        description: 'The JWT claim key to extract (e.g. "sub", "email", "org_id"). Omit to list all claims.'
+        description: 'The JWT claim key to extract (e.g. "sub", "email", "org_id")'
       }
     },
     required: ['claim_key']
@@ -15,11 +14,7 @@ class InspectTokenTool < MCP::Tool
 
   def self.call(claim_key:, server_context:)
     claims = Thread.current.thread_variable_get(:scalekit_claims) || {}
-
-    value = claims[claim_key]
-
-    # Log the extracted claim — useful for debugging custom claims in production
-    Rails.logger.info "[InspectToken] claim=#{claim_key.inspect} value=#{value.inspect}"
+    value  = claims[claim_key]
 
     if value.nil?
       available = claims.keys.join(', ')

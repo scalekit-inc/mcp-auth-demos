@@ -84,7 +84,11 @@ class ScalekitTokenValidator
 
   def get_json(url)
     uri  = URI(url)
-    resp = Net::HTTP.get_response(uri)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl     = uri.scheme == 'https'
+    http.open_timeout = 5
+    http.read_timeout = 10
+    resp = http.get(uri.request_uri)
     raise AuthenticationError, "HTTP #{resp.code} fetching #{url}" unless resp.is_a?(Net::HTTPSuccess)
     JSON.parse(resp.body)
   end
