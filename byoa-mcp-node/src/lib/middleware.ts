@@ -1,7 +1,6 @@
-import { TokenValidationOptions } from '@scalekit-sdk/node';
 import { NextFunction, Request, Response } from 'express';
 import { config } from '../config/config.js';
-import { TOOLS } from '../tools/index.js';
+import { requestContext, TokenClaims } from './context.js';
 import { logger } from './logger.js';
 import { scalekit } from './scalekit.js';
 
@@ -25,17 +24,12 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       throw new Error('Missing or invalid Bearer token');
     }
 
-    let validateTokenOptions: TokenValidationOptions = { audience: [EXPECTED_AUDIENCE] };
-    const isToolCall = req.body?.method === 'tools/call';
-    if (isToolCall) {
-      const toolName = req.body?.params?.name as keyof typeof TOOLS;
-      if (toolName && toolName in TOOLS) {
-        validateTokenOptions.requiredScopes = TOOLS[toolName].requiredScopes;
-      }
-      logger.info(`Verifying scopes for tool call: ${toolName}`, { requiredScopes: validateTokenOptions.requiredScopes });
-    }
+    const claims = await scalekit.validateToken<TokenClaims>(token, { audience: [EXPECTED_AUDIENCE] });
 
-    await scalekit.validateToken(token, validateTokenOptions);
+    // Store decoded claims in the request-scoped context so tool handlers can access them.
+    const store = requestContext.getStore();
+    if (store) store.claims = claims;
+
     logger.info('Authentication successful');
     next();
   } catch (err) {

@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import { config } from './config/config.js';
 import { oauthProtectedResourceHandler } from './lib/auth.js';
+import { requestContext } from './lib/context.js';
 import { logger } from './lib/logger.js';
 import { authMiddleware } from './lib/middleware.js';
 import { setupTransportRoutes } from './lib/transport.js';
@@ -10,7 +11,6 @@ import { loginGetHandler, loginSubmitHandler } from './login/handler.js';
 import { registerTools } from './tools/index.js';
 
 const PORT = config.port;
-const server = new McpServer({ name: config.serverName, version: config.serverVersion });
 
 const app = express();
 
@@ -28,6 +28,7 @@ app.use(allowAll);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use((req, res, next) => requestContext.run({ claims: {} }, next));
 app.use(authMiddleware);
 
 app.get('/.well-known/oauth-protected-resource', oauthProtectedResourceHandler);
@@ -38,10 +39,13 @@ app.get('/.well-known/oauth-protected-resource', oauthProtectedResourceHandler);
 app.get('/login', loginGetHandler);
 app.post('/login/submit', loginSubmitHandler);
 
-setupTransportRoutes(app, server);
-logger.info('Transport routes set up successfully');
+const createServer = () => {
+  const server = new McpServer({ name: config.serverName, version: config.serverVersion });
+  registerTools(server);
+  return server;
+};
 
-registerTools(server);
-logger.info('Registered tools successfully');
+setupTransportRoutes(app, createServer);
+logger.info('MCP transport and tools ready');
 
 app.listen(PORT, () => logger.info(`MCP server running on http://localhost:${PORT}`));

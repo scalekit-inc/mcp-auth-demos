@@ -33,11 +33,24 @@ export async function loginSubmitHandler(req: Request, res: Response) {
   // In a real app, validate the user's credentials against your auth system here.
   // This demo accepts any non-empty email and password to focus on the BYOA handshake.
 
+  // After authenticating the user, look up whatever attributes you want to pass along —
+  // org membership, roles, subscription tier, feature flags, anything your auth system knows.
+  // Scalekit embeds these as custom claims in the issued access token so your MCP server
+  // can read them on every request without an extra database call.
+  const userAttributes = {
+    org_id: 'org_acme_01',
+    org_name: 'Acme Corp',
+  };
+
   try {
     await scalekit.auth.updateLoginUserDetails(
       config.skConnectionId,
       login_request_id,
-      { sub: email, email }
+      {
+        sub: email,
+        email,
+        customAttributes: userAttributes,
+      }
     );
 
     const callbackUrl = `${config.skEnvUrl}/sso/v1/connections/${config.skConnectionId}/partner:callback?state=${encodeURIComponent(state)}`;

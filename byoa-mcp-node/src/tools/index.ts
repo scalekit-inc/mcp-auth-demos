@@ -1,11 +1,17 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerGreetingTools } from './greeting.js';
+import { registerWhoamiTools } from './whoami.js';
 
 const toolsList = {
   greet_user: {
     name: 'greet_user',
     description: 'Greets the user with a personalized message.',
-    requiredScopes: ['usr:read'],
+    requiredScopes: [],
+  },
+  whoami: {
+    name: 'whoami',
+    description: 'Returns the identity and custom claims of the authenticated caller from the access token.',
+    requiredScopes: [],
   },
 } as const;
 
@@ -26,4 +32,5 @@ export const TOOLS: { [K in ToolKey]: ToolDefinition & { name: K } } = Object.fr
 
 export function registerTools(server: McpServer) {
   registerGreetingTools(server);
+  registerWhoamiTools(server);
 }
