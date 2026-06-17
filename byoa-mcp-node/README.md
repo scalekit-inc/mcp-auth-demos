@@ -42,7 +42,7 @@ MCP Client → Scalekit → GET /login?login_request_id=...&state=...
 
 Go to **Settings → API Credentials** in the Scalekit dashboard.
 
-![Scalekit API Credentials](docs/scalekit-api-credentials.png)
+![Scalekit BYOA Configuration](docs/scalekit-byoa-configuration.png)
 
 Copy these three values:
 
@@ -72,7 +72,7 @@ Still on your MCP server page, click the **Metadata JSON** tab and copy the full
 
 Still on the **Configuration** tab, scroll down to **Advanced Configuration** and expand it.
 
-![Scalekit BYOA Configuration](docs/scalekit-byoa-configuration.png)
+![Scalekit API Credentials](docs/scalekit-api-credentials.png)
 
 - Toggle **Use your own authentication service** → **Enabled**
 - Set **Login Endpoint URL** to: `http://localhost:3002/login`
