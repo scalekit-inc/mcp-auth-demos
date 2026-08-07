@@ -1,0 +1,16 @@
+[Unit]
+Description=ScaleKit Greeting MCP Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/stob-mcp-auth-demos/greeting-mcp-node
+EnvironmentFile=/root/stob-mcp-auth-demos/greeting-mcp-node/.env
+ExecStart=/usr/bin/node dist/main.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,45 +1,28 @@
-import { Scalekit, TokenValidationOptions } from '@scalekit-sdk/node';
+import { Scalekit } from '@scalekit-sdk/node';
 import { NextFunction, Request, Response } from 'express';
 import { config } from '../config/config.js';
-import { TOOLS } from '../tools/index.js';
-import { logger } from './logger.js';
 
 const scalekit = new Scalekit(config.skEnvUrl, config.skClientId, config.skClientSecret);
-const EXPECTED_AUDIENCE = config.expectedAudience;
-export const WWWHeader = {HeaderKey: 'WWW-Authenticate',HeaderValue: `Bearer realm="OAuth", resource_metadata="http://localhost:${config.port}/.well-known/oauth-protected-resource"`}
+
+const RESOURCE_ID = config.expectedAudience;
+const METADATA_URL = `${config.expectedAudience.replace(/\/$/, '')}/.well-known/oauth-protected-resource`;
+
+export const WWWHeader = {
+    key: 'WWW-Authenticate',
+    value: `Bearer realm="OAuth", resource_metadata="${METADATA_URL}"`,
+};
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
-        // Allow public access to well-known endpoints
-        if (req.path.includes('.well-known')) {
-            return next();
-        }
+        // Allow metadata discovery to stay public
+        if (req.path.includes('.well-known')) return next();
 
-        // Apply authentication to all MCP requests
-        const authHeader = req.headers['authorization'];
-        const token = authHeader?.startsWith('Bearer ')? authHeader.split('Bearer ')[1]?.trim(): null;
+        const token = req.headers.authorization?.replace('Bearer ', '').trim();
+        if (!token) throw new Error('Missing Bearer token');
 
-        if (!token) {
-            logger.warn('Missing Bearer token', {path: req.path,method: req.method,body: req.body});
-            throw new Error('Missing or invalid Bearer token');
-        }
-
-        // For tool calls, add scopes to be validated
-        let validateTokenOptions: TokenValidationOptions = { audience: [EXPECTED_AUDIENCE] };
-        const isToolCall = req.body?.method === 'tools/call';
-        if (isToolCall) {
-            const toolName = req.body?.params?.name as keyof typeof TOOLS;
-            if (toolName && (toolName in TOOLS)) {
-                validateTokenOptions.requiredScopes = TOOLS[toolName].requiredScopes;
-            }
-            logger.info(`Verifying scopes for tool call: ${toolName}`, { requiredScopes: validateTokenOptions.requiredScopes });
-        }
-
-        await scalekit.validateToken(token, validateTokenOptions);
-        logger.info('Authentication successful');
-        next();
-    } catch (err) {
-        logger.warn('Unauthorized request', { error: err instanceof Error ? err.message : String(err) });
-        return res.status(401).set(WWWHeader.HeaderKey, WWWHeader.HeaderValue).end();
+        await scalekit.validateToken(token);
+        return next();
+    } catch {
+        return res.status(401).set(WWWHeader.key, WWWHeader.value).end();
     }
 }

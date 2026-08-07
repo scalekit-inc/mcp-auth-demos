@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch for MCP greeting server rebuild
+
+[Path]
+PathModified=/root/mcp-auth-demos/greeting-mcp-node/dist/main.js
+
+[Install]
+WantedBy=multi-user.target

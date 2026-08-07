@@ -1,0 +1,7 @@
+{
+  "authorization_servers": ["https://liveandbreathe.scalekit.dev/resources/res_114244373767521282"],
+  "bearer_methods_supported": ["header"],
+  "resource": "https://mcp.stob.ai/",
+  "resource_documentation": "https://mcp.stob.ai/docs",
+  "scopes_supported": ["wks:read", "wks:write", "env:read", "env:write", "org:read", "org:write"]
+}

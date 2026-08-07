@@ -1,0 +1,6 @@
+[Unit]
+Description=Restart MCP greeting server after rebuild
+
+[Service]
+Type=oneshot
+ExecStart=systemctl restart mcp-greeting

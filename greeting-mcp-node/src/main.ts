@@ -30,6 +30,8 @@ app.use(express.json());
 app.use(authMiddleware);
 
 app.get('/.well-known/oauth-protected-resource', oauthProtectedResourceHandler);
+app.get('/.well-known/oauth-protected-resource/claude', oauthProtectedResourceHandler);
+app.get('/.well-known/oauth-protected-resource/liveandbreathe', oauthProtectedResourceHandler);
 
 setupTransportRoutes(app, server);
 logger.info('Transport routes set up successfully');
